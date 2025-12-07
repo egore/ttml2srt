@@ -58,6 +58,13 @@ class Ttml2Srt():
         else:
             return float(expression)
 
+    def _get_elements_by_tag(self, dom, tag_name):
+        """Get elements by tag name, trying without namespace first, then with TTML namespace."""
+        elements = dom.getElementsByTagName(tag_name)
+        if not elements:
+            elements = dom.getElementsByTagNameNS('http://www.w3.org/ns/ttml', tag_name)
+        return elements
+
     def _load_ttml_doc(self, filepath):
         """Read TTML file. Extract <p> elements and various attributes.
         """
@@ -72,7 +79,7 @@ class Ttml2Srt():
 
         # Get the root tt element (assume the file contains
         # a single subtitle document)
-        tt_element = ttml_dom.getElementsByTagName('tt')[0]
+        tt_element = self._get_elements_by_tag(ttml_dom, 'tt')[0]
 
         # Extract doc language
         # https://tools.ietf.org/html/rfc4646#section-2.1
@@ -101,8 +108,8 @@ class Ttml2Srt():
 
         # Grab <style>s
         # https://www.w3.org/TR/ttml1/#styling-attribute-vocabulary
-        for styles_container in ttml_dom.getElementsByTagName('styling'):
-            for style in styles_container.getElementsByTagName('style'):
+        for styles_container in self._get_elements_by_tag(ttml_dom, 'styling'):
+            for style in self._get_elements_by_tag(styles_container, 'style'):
                 style_id = getattr(
                     style.attributes.get('xml:id', {}), 'value', None)
                 if not style_id:
@@ -124,7 +131,7 @@ class Ttml2Srt():
         # document contains multiple local time contexts with their own
         # offsets, or even just a single context with an offset other
         # than zero.
-        self.lines = [i for i in ttml_dom.getElementsByTagName('p') \
+        self.lines = [i for i in self._get_elements_by_tag(ttml_dom, 'p') \
             if 'begin' in i.attributes.keys()]
 
     def timeexpr_to_ms(self, *args):
